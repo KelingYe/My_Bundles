@@ -13,17 +13,24 @@ public class BundleItem : MonoBehaviour
     {
         m_selfTransform = transform; // Get the transform of the item in the grid
     }
+
     public void CreateBundleBg(int color,GameObject prefab){
         this.bundleColor = color;
         bundleSpriteObj = Instantiate(prefab); // Instantiate the prefab for the item in the grid
         bundleSpriteObj.transform.localScale = Vector3.one*GlobalDef.CellSize; // Set the scale of the item in the grid
         bundleSpriteObj.transform.SetParent(m_selfTransform, false); // Set the parent of the item to the grid
     }
+
     public void UpdatePosition(int rowIndex, int columnIndex)
     {
         this.rowIndex = rowIndex;
         this.columnIndex = columnIndex;
         var targetPos = new Vector3((columnIndex - GlobalDef.ColumnCount / 2f) * GlobalDef.CellSize + GlobalDef.CellSize / 4f, (rowIndex - GlobalDef.RowCount / 2f) * GlobalDef.CellSize, 0);
         m_selfTransform.localPosition = targetPos; // Set the position of the item in the grid
+    }
+
+    public void DestroyBundle(){
+        Destroy(bundleSpriteObj); // Destroy the bundle sprite object
+        bundleSpriteObj = null; // Set the bundle sprite object to null
     }
 }
