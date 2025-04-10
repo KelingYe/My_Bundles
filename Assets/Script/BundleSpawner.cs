@@ -13,6 +13,12 @@ public class BundleSpawner : MonoBehaviour
         m_bundleRoot = transform;   // Get the transform of the bundle root
     }
 
+    private void SetBundleItem(int rowIndex, int columnIndex, BundleItem item)
+    {
+        var temp = BundleList[rowIndex] as ArrayList; // Get the list of bundle items for the current row
+        temp[columnIndex] = item; // Set the bundle item at the current position
+    }
+
     private BundleItem AddRandomBundle(int rowIndex, int columnIndex)
     {
         var bundleColor = Random.Range(0, bundlePrefabs.Length); // Randomly select a color for the bundle item
@@ -120,7 +126,33 @@ public class BundleSpawner : MonoBehaviour
        m_matchBundles.Clear(); // Clear list after checking
    }
 
-    
+    private void DropDownotherBundles() // Drop down the other bundles in the grid
+    {
+        for (int i = 0; i < m_matchBundles.Count; i++)
+        {
+            var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
+            for (int rowIndex = item.rowIndex; rowIndex < GlobalDef.RowCount - 1; rowIndex++)
+            {
+                var temp = GetBundleItem(rowIndex + 1, item.columnIndex); // Get the bundle item below
+                temp.rowIndex--; // Decrease the row index of the item below
+                SetBundleItem(temp.rowIndex, temp.columnIndex, temp); // Set the bundle item to the new position
+                temp.UpdatePosition(temp.rowIndex, temp.columnIndex);
+            }
+            ReuseRemovedBundles(item); // Reuse the removed bundle item
+        }
+    }
+
+    private void ReuseRemovedBundles(BundleItem bundle) // Reuse the removed bundles
+    {
+        var color = Random.Range(0, bundlePrefabs.Length); // Randomly select a color for the bundle item
+        bundle.rowIndex = GlobalDef.RowCount; // Set the row index of the bundle item to the last row
+        bundle.CreateBundleBg(color, bundlePrefabs[color]); // Create the background for the bundle item
+        bundle.UpdatePosition(bundle.rowIndex, bundle.columnIndex); // Update the position of the bundle item in the grid
+        bundle.rowIndex--;
+        SetBundleItem(bundle.rowIndex, bundle.columnIndex, bundle); // Set the bundle item to the new position
+        bundle.UpdatePosition(bundle.rowIndex, bundle.columnIndex); // Update the position of the bundle item in the grid
+
+    }
 
     private void Start()
     {
