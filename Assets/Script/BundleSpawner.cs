@@ -95,25 +95,14 @@ public class BundleSpawner : MonoBehaviour
         return isMatch; // Return the match flag
     }
 
-    // private void RemoveMatchBundles() // Remove the matched bundles from the list
-    // {
-    //     for (int i = 0; i < m_matchBundles.Count; i++)
-    //     {
-    //         var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
-    //         item.DestroyBundle(); // Destroy the bundle item
-    //         Debug.Log("Object destroyed:", item);   // Log the destruction of the item
-    //     }
-    // }
     private void RemoveMatchBundles() 
    {
        foreach (BundleItem item in new ArrayList(m_matchBundles)) //创建对原始列表的副本进行遍历
        {
            if (item != null) {
                item.DestroyBundle();
-               Debug.Log("Object destroyed", item);
            }
        }
-       m_matchBundles.Clear(); // 清空所有已处理的项目
    }
 
     IEnumerator CheckMatch() // Check for matches in the grid
@@ -121,26 +110,31 @@ public class BundleSpawner : MonoBehaviour
        bool foundMatch = CheckXMatch() | CheckYMatch();
        if(foundMatch){
            RemoveMatchBundles();
-           yield return new WaitForSeconds(0.5f);
+           yield return new WaitForSeconds(0.2f);
+           DropDownOtherBundles();
+           m_matchBundles = new ArrayList(); // Clear the match bundles list
+           yield return new WaitForSeconds(0.6f);
+           StartCoroutine(AutoMatchAgain());
        }
        m_matchBundles.Clear(); // Clear list after checking
    }
 
-    private void DropDownotherBundles() // Drop down the other bundles in the grid
+    private void DropDownOtherBundles() // Drop down the other bundles in the grid
     {
         for (int i = 0; i < m_matchBundles.Count; i++)
         {
             var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
-            for (int rowIndex = item.rowIndex; rowIndex < GlobalDef.RowCount - 1; rowIndex++)
+            for (int j = item.rowIndex + 1; j < GlobalDef.RowCount; j++)
             {
-                var temp = GetBundleItem(rowIndex + 1, item.columnIndex); // Get the bundle item below
+                var temp = GetBundleItem(j, item.columnIndex); // Get the bundle item below
                 temp.rowIndex--; // Decrease the row index of the item below
                 SetBundleItem(temp.rowIndex, temp.columnIndex, temp); // Set the bundle item to the new position
-                temp.UpdatePosition(temp.rowIndex, temp.columnIndex);
+                temp.UpdatePosition(temp.rowIndex, temp.columnIndex, true);
             }
             ReuseRemovedBundles(item); // Reuse the removed bundle item
         }
     }
+
 
     private void ReuseRemovedBundles(BundleItem bundle) // Reuse the removed bundles
     {
@@ -150,8 +144,18 @@ public class BundleSpawner : MonoBehaviour
         bundle.UpdatePosition(bundle.rowIndex, bundle.columnIndex); // Update the position of the bundle item in the grid
         bundle.rowIndex--;
         SetBundleItem(bundle.rowIndex, bundle.columnIndex, bundle); // Set the bundle item to the new position
-        bundle.UpdatePosition(bundle.rowIndex, bundle.columnIndex); // Update the position of the bundle item in the grid
+        bundle.UpdatePosition(bundle.rowIndex, bundle.columnIndex,true); // Update the position of the bundle item in the grid
+    }
 
+    IEnumerator AutoMatchAgain(){
+        if(CheckXMatch() | CheckYMatch()){
+            RemoveMatchBundles();
+            yield return new WaitForSeconds(0.2f);
+            DropDownOtherBundles();
+            m_matchBundles = new ArrayList(); // Clear the match bundles list
+            yield return new WaitForSeconds(0.6f);
+            StartCoroutine(AutoMatchAgain()); // Start the coroutine again to check for matches
+        }
     }
 
     private void Start()

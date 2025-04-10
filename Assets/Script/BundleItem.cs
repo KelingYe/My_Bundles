@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using DG.Tweening;
 public class BundleItem : MonoBehaviour
 {
     public int rowIndex; // Row index of the item in the grid
@@ -21,12 +21,18 @@ public class BundleItem : MonoBehaviour
         bundleSpriteObj.transform.SetParent(m_selfTransform, false); // Set the parent of the item to the grid
     }
 
-    public void UpdatePosition(int rowIndex, int columnIndex)
+    public void UpdatePosition(int rowIndex, int columnIndex, bool dotween = false)
     {
         this.rowIndex = rowIndex;
         this.columnIndex = columnIndex;
         var targetPos = new Vector3((columnIndex - GlobalDef.ColumnCount / 2f) * GlobalDef.CellSize + GlobalDef.CellSize / 4f, (rowIndex - GlobalDef.RowCount / 2f) * GlobalDef.CellSize, 0);
-        m_selfTransform.localPosition = targetPos; // Set the position of the item in the grid
+        if (dotween)
+        {
+            m_selfTransform.DOLocalMove(targetPos, 0.3f); // Move the item to the target position with a tween animation
+        }else
+        {
+            m_selfTransform.localPosition = targetPos; // Set the position of the item in the grid without animation
+        }
     }
 
     public void DestroyBundle(){
