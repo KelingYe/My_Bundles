@@ -12,14 +12,8 @@ public class BlockSpawner : MonoBehaviour
             for (int columnIndex = 0; columnIndex < GlobalDef.ColumnCount; columnIndex++){
                 var obj = Instantiate(bottomBlockObj); // Instantiate a new block
                 obj.transform.SetParent(bottomBlockObj.transform.parent, false); // Set the parent of the block to the block prefab
-                obj.transform.localPosition = new Vector3((columnIndex - GlobalDef.ColumnCount / 2f) * GlobalDef.CellSize + GlobalDef.CellSize / 2f, (rowIndex - GlobalDef.RowCount / 2f) * GlobalDef.CellSize + GlobalDef.CellSize / 2f, 0); // Set the position of the block in the grid
+                obj.transform.localPosition = new Vector3((columnIndex - GlobalDef.ColumnCount / 2f) * GlobalDef.CellSize + GlobalDef.CellSize / 4f, (rowIndex - GlobalDef.RowCount / 2f) * GlobalDef.CellSize, 0); // Set the position of the block in the grid
             }
         }
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }
