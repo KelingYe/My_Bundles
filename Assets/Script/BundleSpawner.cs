@@ -6,6 +6,10 @@ public class BundleSpawner : MonoBehaviour
 {
     public GameObject[] bundlePrefabs; // Prefab for the bundle item
     public ArrayList BundleList;    // List of bundle items
+    public ArrayList RowBoomList;    // List of bundle items to be removed
+    public ArrayList ColumnBoomList; // List of bundle items to be removed
+    public ArrayList BigBoomList; // List of bundle items to be removed
+    public ArrayList SuperBoomList; // List of bundle items to be removed
     private Transform m_bundleRoot; // Root transform for the bundle items
     private ArrayList m_matchBundles; // List of matched bundle items
     private void Awake()
@@ -47,6 +51,70 @@ public class BundleSpawner : MonoBehaviour
         if (columnIndex < 0 || columnIndex >= GlobalDef.ColumnCount) return null; // Check if the column index is out of bounds
         var temp = BundleList[rowIndex] as ArrayList; // Get the listof bundle items for the current row
         return temp[columnIndex] as BundleItem;
+    }
+
+   private bool CheckRow4_5Match()
+    {
+        bool foundMatch = false;
+    
+        for (int rowIndex = 0; rowIndex < GlobalDef.RowCount; rowIndex++)
+        {
+            int continuousCount = 0; // Used to count the number of consecutive identical items
+            int startColumnIndex = 0;
+            int endColumnIndex = 0;
+    
+            BundleItem firstItem = null;
+            for (int columnIndex = 0; columnIndex < GlobalDef.ColumnCount; columnIndex++)
+            {
+                BundleItem currentItem = GetBundleItem(rowIndex, columnIndex);
+    
+                if (currentItem != null && (firstItem == null || firstItem.bundleColor == currentItem.bundleColor))
+                {
+                    continuousCount++;
+                    if (firstItem == null) {
+                        firstItem = currentItem;
+                        startColumnIndex = columnIndex;
+                    }
+                    endColumnIndex = columnIndex;
+                }
+                else
+                {
+                    // Check the size of the match collected
+                    if (continuousCount >= 4)
+                    {
+                        foundMatch = true;
+                        // 确定匹配类型并存储相关位置
+                        if (continuousCount == 4)
+                        {
+                            RowBoomList.Add(new Vector2(rowIndex, startColumnIndex + 1));
+                        }
+                        else // 5及以上
+                        {
+                            SuperBoomList.Add(new Vector2(rowIndex, startColumnIndex + continuousCount / 2));
+                        }
+                    }
+                    // Reset for the next possible match
+                    continuousCount = 0;
+                    firstItem = null;
+                }
+            }
+    
+            // Just to ensure we handle the case where the last elements are in a match
+            if (continuousCount >= 4)
+            {
+                foundMatch = true;
+                if (continuousCount == 4)
+                {
+                    RowBoomList.Add(new Vector2(rowIndex, startColumnIndex + 1));
+                }
+                else // 5及以上
+                {
+                    SuperBoomList.Add(new Vector2(rowIndex, startColumnIndex + continuousCount / 2));
+                }
+            }
+        }
+    
+        return foundMatch;
     }
 
     private bool CheckXMatch()
