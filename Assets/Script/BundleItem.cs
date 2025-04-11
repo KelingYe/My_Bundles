@@ -38,5 +38,6 @@ public class BundleItem : MonoBehaviour
     public void DestroyBundle(){
         Destroy(bundleSpriteObj); // Destroy the bundle sprite object
         bundleSpriteObj = null; // Set the bundle sprite object to null
+        EventDispatcher.instance.DispatchEvent(EventDef.EVENT_BUNDLE_DISAPPEAR, m_selfTransform.position); // Dispatch the event for bundle disappearance
     }
 }

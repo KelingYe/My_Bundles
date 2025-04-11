@@ -5,14 +5,5 @@ using UnityEngine;
 public class EventDef : MonoBehaviour
 {
     // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public const string EVENT_BUNDLE_DISAPPEAR = "EVENT_BUNDLE_DISAPPEAR"; // Event for bundle disappearance
 }
