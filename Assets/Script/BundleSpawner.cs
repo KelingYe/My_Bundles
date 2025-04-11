@@ -24,6 +24,10 @@ public class BundleSpawner : MonoBehaviour
         temp[columnIndex] = item; // Set the bundle item at the current position
     }
 
+
+
+
+    //<————————初始化，生成随机Bundle—————————>
     private BundleItem AddRandomBundle(int rowIndex, int columnIndex)
     {
         var bundleColor = Random.Range(0, bundlePrefabs.Length); // Randomly select a color for the bundle item
@@ -54,6 +58,10 @@ public class BundleSpawner : MonoBehaviour
         return temp[columnIndex] as BundleItem;
     }
 
+
+
+
+    //<————————匹配行四消及以上，确定行炸弹和超级炸弹位置————————>
    private bool CheckRow4_5Match()
     {
         bool foundMatch = false;
@@ -118,6 +126,10 @@ public class BundleSpawner : MonoBehaviour
         return foundMatch;
     }
 
+
+
+
+    //<————————匹配三消——————————>
     private bool CheckXMatch()
     {
         bool isMatch = false; // Flag to check if there is a match in the X direction  
@@ -176,6 +188,7 @@ public class BundleSpawner : MonoBehaviour
 
     IEnumerator CheckMatch() // Check for matches in the grid
     {
+        CheckRow4_5Match(); 
        bool foundMatch = CheckXMatch() | CheckYMatch();
        if(foundMatch){
            RemoveMatchBundles();
@@ -186,8 +199,58 @@ public class BundleSpawner : MonoBehaviour
            StartCoroutine(AutoMatchAgain());
        }
        m_matchBundles.Clear(); // Clear list after checking
+       FillBoomsIfNeeded();
    }
 
+
+
+
+    //<————————生成炸弹——————————>
+    private void FillBoomsIfNeeded()
+    {
+        // 处理行Boom
+        foreach (Vector2 pos in RowBoomList) {
+            PlaceBoomAt((int)pos.x, (int)pos.y, 1); // 1 为按类型确定的四消炸弹
+        }
+
+        // 处理超级Boom
+        foreach (Vector2 pos in SuperBoomList) {
+            PlaceBoomAt((int)pos.x, (int)pos.y, 2); // 2 为按类型确定的五个或以上炸弹
+        }
+
+        // Clearing the lists post-processing
+        RowBoomList.Clear();
+        SuperBoomList.Clear();
+    }
+
+    private void PlaceBoomAt(int rowIndex, int columnIndex, int boomType)
+    {
+        BundleItem item = GetBundleItem(rowIndex, columnIndex);
+        if (item != null)
+        {
+            Destroy(item.gameObject); // 移除原有的BundleItem
+        }
+        item = AddBoomBundle(rowIndex, columnIndex, boomType);
+        SetBundleItem(rowIndex, columnIndex, item);
+    }
+
+    private BundleItem AddBoomBundle(int rowIndex, int columnIndex, int boomType)
+    {
+        GameObject boomprefab = boomType == 1 ? boomPrefabs[0] : boomPrefabs[1]; // 简化版，假设boomPrefabs已按类型排序
+        var item = new GameObject("Boom");
+        item.transform.SetParent(m_bundleRoot, false);
+        item.AddComponent<BoxCollider2D>().size = Vector2.one * GlobalDef.CellSize;
+        var bhv = item.AddComponent<BundleItem>();
+        bhv.UpdatePosition(rowIndex, columnIndex);
+        bhv.CreateBoomBG(boomType, boomprefab);
+        return bhv;
+    }
+
+
+
+
+
+//<————————下落剩余Bundle——————————>
     private void DropDownOtherBundles() // Drop down the other bundles in the grid
     {
         for (int i = 0; i < m_matchBundles.Count; i++)
