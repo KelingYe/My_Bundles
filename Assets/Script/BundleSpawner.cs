@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class BundleSpawner : MonoBehaviour
 {
+    public GameObject[] boomPrefabs; // Prefab for the bundle item
     public GameObject[] bundlePrefabs; // Prefab for the bundle item
     public ArrayList BundleList;    // List of bundle items
     public ArrayList RowBoomList;    // List of bundle items to be removed
@@ -56,18 +57,18 @@ public class BundleSpawner : MonoBehaviour
    private bool CheckRow4_5Match()
     {
         bool foundMatch = false;
-    
+
         for (int rowIndex = 0; rowIndex < GlobalDef.RowCount; rowIndex++)
         {
             int continuousCount = 0; // Used to count the number of consecutive identical items
             int startColumnIndex = 0;
             int endColumnIndex = 0;
-    
+
             BundleItem firstItem = null;
             for (int columnIndex = 0; columnIndex < GlobalDef.ColumnCount; columnIndex++)
             {
                 BundleItem currentItem = GetBundleItem(rowIndex, columnIndex);
-    
+
                 if (currentItem != null && (firstItem == null || firstItem.bundleColor == currentItem.bundleColor))
                 {
                     continuousCount++;
@@ -98,7 +99,7 @@ public class BundleSpawner : MonoBehaviour
                     firstItem = null;
                 }
             }
-    
+
             // Just to ensure we handle the case where the last elements are in a match
             if (continuousCount >= 4)
             {
@@ -113,7 +114,7 @@ public class BundleSpawner : MonoBehaviour
                 }
             }
         }
-    
+
         return foundMatch;
     }
 

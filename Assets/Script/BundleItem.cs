@@ -7,6 +7,7 @@ public class BundleItem : MonoBehaviour
     public int rowIndex; // Row index of the item in the grid
     public int columnIndex; // Column index of the item in the grid
     public int bundleColor; // Color of the item in the grid
+    public int boomType; // Type of the item in the grid
     public GameObject bundleSpriteObj; // Sprite of the item in the grid
     private Transform m_selfTransform; // Transform of the item in the grid
     private void Awake()
@@ -18,6 +19,14 @@ public class BundleItem : MonoBehaviour
         this.bundleColor = color;
         bundleSpriteObj = Instantiate(prefab); // Instantiate the prefab for the item in the grid
         bundleSpriteObj.transform.localScale = Vector3.one*GlobalDef.CellSize; // Set the scale of the item in the grid
+        bundleSpriteObj.transform.SetParent(m_selfTransform, false); // Set the parent of the item to the grid
+    }
+
+    public void CreateBoomBG(int type, GameObject prefab)
+    {
+        this.boomType = type;
+        bundleSpriteObj = Instantiate(prefab); // Instantiate the prefab for the item in the grid
+        bundleSpriteObj.transform.localScale = Vector3.one * GlobalDef.CellSize; // Set the scale of the item in the grid
         bundleSpriteObj.transform.SetParent(m_selfTransform, false); // Set the parent of the item to the grid
     }
 
