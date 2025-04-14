@@ -15,7 +15,9 @@ public class BundleSpawner : MonoBehaviour
     private ArrayList m_matchBundles; // List of matched bundle items
     private void Awake()
     {
-        m_bundleRoot = transform;   // Get the transform of the bundle root
+        m_bundleRoot = transform;
+        RowBoomList = new ArrayList(); // Initialize RowBoomList
+        SuperBoomList = new ArrayList(); // Initialize SuperBoomList
     }
 
     private void SetBundleItem(int rowIndex, int columnIndex, BundleItem item)
@@ -64,6 +66,7 @@ public class BundleSpawner : MonoBehaviour
     //<————————匹配行四消及以上，确定行炸弹和超级炸弹位置————————>
    private bool CheckRow4_5Match()
     {
+        Debug.Log("Checking for row matches...");
         bool foundMatch = false;
 
         for (int rowIndex = 0; rowIndex < GlobalDef.RowCount; rowIndex++)
@@ -95,6 +98,7 @@ public class BundleSpawner : MonoBehaviour
                         // 确定匹配类型并存储相关位置
                         if (continuousCount == 4)
                         {
+                            Debug.Log("RowBoomList: " + rowIndex + " " + (startColumnIndex + 1));
                             RowBoomList.Add(new Vector2(rowIndex, startColumnIndex + 1));
                         }
                         else // 5及以上
@@ -206,37 +210,68 @@ public class BundleSpawner : MonoBehaviour
 
 
     //<————————生成炸弹——————————>
-    private void FillBoomsIfNeeded()
+        private void FillBoomsIfNeeded()
     {
-        // 处理行Boom
-        foreach (Vector2 pos in RowBoomList) {
-            PlaceBoomAt((int)pos.x, (int)pos.y, 1); // 1 为按类型确定的四消炸弹
+        Debug.Log("Filling booms...");
+
+        // Handle RowBoom
+        if (RowBoomList == null)
+        {
+            Debug.LogError("RowBoomList is null.");
+            return;
+        }
+        foreach (Vector2 pos in RowBoomList)
+        {
+            Debug.Log($"Placing row boom at: {pos}");
+            PlaceBoomAt((int)pos.x, (int)pos.y, 1);
         }
 
-        // 处理超级Boom
-        foreach (Vector2 pos in SuperBoomList) {
-            PlaceBoomAt((int)pos.x, (int)pos.y, 2); // 2 为按类型确定的五个或以上炸弹
+        // Handle SuperBoom
+        if (SuperBoomList == null)
+        {
+            Debug.LogError("SuperBoomList is null.");
+            return;
+        }
+        foreach (Vector2 pos in SuperBoomList)
+        {
+            Debug.Log($"Placing super boom at: {pos}");
+            PlaceBoomAt((int)pos.x, (int)pos.y, 2);
         }
 
-        // Clearing the lists post-processing
+        // Clear lists after processing
         RowBoomList.Clear();
         SuperBoomList.Clear();
     }
 
     private void PlaceBoomAt(int rowIndex, int columnIndex, int boomType)
     {
+        if (rowIndex < 0 || rowIndex >= GlobalDef.RowCount || columnIndex < 0 || columnIndex >= GlobalDef.ColumnCount)
+        {
+            Debug.LogWarning($"Position ({rowIndex}, {columnIndex}) is out of bounds.");
+            return;
+        }
+
         BundleItem item = GetBundleItem(rowIndex, columnIndex);
         if (item != null)
         {
-            Destroy(item.gameObject); // 移除原有的BundleItem
+            Destroy(item.gameObject); // Remove the existing BundleItem
         }
+
         item = AddBoomBundle(rowIndex, columnIndex, boomType);
-        SetBundleItem(rowIndex, columnIndex, item);
+        if (item != null)
+        {
+            SetBundleItem(rowIndex, columnIndex, item);
+        }
+        else
+        {
+            Debug.LogError("Failed to create BoomBundle.");
+        }
     }
 
     private BundleItem AddBoomBundle(int rowIndex, int columnIndex, int boomType)
     {
-        GameObject boomprefab = boomType == 1 ? boomPrefabs[0] : boomPrefabs[1]; // 简化版，假设boomPrefabs已按类型排序
+        GameObject boomprefab = boomPrefabs[boomType];
+        Debug.Log($"Creating BoomBundle of type {boomType} at ({rowIndex}, {columnIndex})");
         var item = new GameObject("Boom");
         item.transform.SetParent(m_bundleRoot, false);
         item.AddComponent<BoxCollider2D>().size = Vector2.one * GlobalDef.CellSize;
