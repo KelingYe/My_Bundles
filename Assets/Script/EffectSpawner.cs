@@ -49,6 +49,33 @@ public class EffectSpawner : MonoBehaviour
     {
         var pos = (Vector3)args[0]; // Get the position from the event arguments
         ShowDisappearEffect(pos); // Show the disappear effect at the specified position
+        
+    }
+
+    public void ShowScoreEffect(Vector3 pos)
+    {
+        GameObject Obj;
+        if (m_disappearEffectPool.Count > 0)
+        {
+            Obj = m_disappearEffectPool.Dequeue(); // Get an object from the pool
+        }
+        else
+        {
+            Obj = Instantiate(disappearEffectPrefab); // Instantiate a new object if the pool is empty
+            Obj.transform.SetParent(m_effectRoot, false); // Set the parent of the object to the effect root
+            var bhv = Obj.GetComponent<AnimationEvent>(); // Get the AnimationEvent component from the object
+            bhv.aniEventCb += (eventName) => { // Subscribe to the animation event callback
+                if (eventName == "finish")
+                {
+                    Obj.SetActive(false); // Deactivate the object when the animation ends
+                    m_disappearEffectPool.Enqueue(Obj); // Enqueue the object back to the pool
+                }
+
+            };
+
+        }
+        Obj.SetActive(true);
+        Obj.transform.position = pos; // Set the position of the object to the specified position 
     }
 
     private void Update()

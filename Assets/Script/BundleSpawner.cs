@@ -344,6 +344,7 @@ public class BundleSpawner : MonoBehaviour
             var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
             if(IsBombAt(item.rowIndex, item.columnIndex)) // Check if the item is a bomb
             {
+                Debug.Log("Item is a bomb, skipping...");
                 continue; // Skip the item if it is a bomb
             }
             for (int j = item.rowIndex + 1; j < GlobalDef.RowCount; j++)
@@ -361,39 +362,39 @@ public class BundleSpawner : MonoBehaviour
 
 
 
-private bool IsBombAt(int rowIndex, int columnIndex)
-{
-    // Check if there is a bomb at the given position
-    foreach (Vector2 pos in RowBoomList)
+    private bool IsBombAt(int rowIndex, int columnIndex)
     {
-        if (pos.x == rowIndex && pos.y == columnIndex)
+        // Check if there is a bomb at the given position
+        foreach (Vector2 pos in RowBoomList)
         {
-            return true;
+            if (pos.x == rowIndex && pos.y == columnIndex)
+            {
+                return true;
+            }
         }
-    }
-    foreach (Vector2 pos in ColumnBoomList)
-    {
-        if (pos.x == rowIndex && pos.y == columnIndex)
+        foreach (Vector2 pos in ColumnBoomList)
         {
-            return true;
+            if (pos.x == rowIndex && pos.y == columnIndex)
+            {
+                return true;
+            }
         }
-    }
-    foreach (Vector2 pos in SuperBoomList)
-    {
-        if (pos.x == rowIndex && pos.y == columnIndex)
+        foreach (Vector2 pos in SuperBoomList)
         {
-            return true;
+            if (pos.x == rowIndex && pos.y == columnIndex)
+            {
+                return true;
+            }
         }
+        // foreach (Vector2 pos in BigBoomList)
+        // {
+        //     if (pos.x == rowIndex && pos.y == columnIndex)
+        //     {
+        //         return true;
+        //     }
+        // }
+        return false;
     }
-    // foreach (Vector2 pos in BigBoomList)
-    // {
-    //     if (pos.x == rowIndex && pos.y == columnIndex)
-    //     {
-    //         return true;
-    //     }
-    // }
-    return false;
-}
 
     private void ReuseRemovedBundles(BundleItem bundle) // Reuse the removed bundles
     {

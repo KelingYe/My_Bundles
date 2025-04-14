@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class beginTest : MonoBehaviour
 {
     // Start is called before the first frame update
-    public void Click(){
-        Debug.Log("Click");
-    }
+    public void OnClickResponse()
+         {
+             Debug.Log("Clicked!");
+         }
 }
