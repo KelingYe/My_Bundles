@@ -18,6 +18,7 @@ public class BundleSpawner : MonoBehaviour
         m_bundleRoot = transform;
         RowBoomList = new ArrayList(); // Initialize RowBoomList
         SuperBoomList = new ArrayList(); // Initialize SuperBoomList
+        ColumnBoomList = new ArrayList();
     }
 
     private void SetBundleItem(int rowIndex, int columnIndex, BundleItem item)
@@ -130,6 +131,76 @@ public class BundleSpawner : MonoBehaviour
         return foundMatch;
     }
 
+    //<————————匹配列四消及以上，确定列炸弹和超级炸弹位置——————————>
+    private bool CheckColumn4_5Match()
+    {
+        Debug.Log("Checking for column matches...");
+        bool foundMatch = false;
+
+        for (int columnIndex = 0; columnIndex < GlobalDef.ColumnCount; columnIndex++)
+        {
+            int continuousCount = 0; // Used to count the number of consecutive identical items
+            int startRowIndex = 0;
+            int endRowIndex = 0;
+
+            BundleItem firstItem = null;
+            for (int rowIndex = 0; rowIndex < GlobalDef.RowCount; rowIndex++)
+            {
+                BundleItem currentItem = GetBundleItem(rowIndex, columnIndex);
+
+                if (currentItem != null && (firstItem == null || firstItem.bundleColor == currentItem.bundleColor))
+                {
+                    continuousCount++;
+                    if (firstItem == null)
+                    {
+                        firstItem = currentItem;
+                        startRowIndex = rowIndex;
+                    }
+                    endRowIndex = rowIndex;
+                }
+                else
+                {
+                    // Check the size of the match collected
+                    if (continuousCount >= 4)
+                    {
+                        foundMatch = true;
+                        // Determine match type and store relevant positions
+                        if (continuousCount == 4)
+                        {
+                            Debug.Log("ColumnBoomList: " + (startRowIndex + 1) + " " + columnIndex);
+                            ColumnBoomList.Add(new Vector2(startRowIndex + 1, columnIndex));
+                        }
+                        else // 5及以上
+                        {
+                            ColumnBoomList.Add(new Vector2(startRowIndex + continuousCount / 2, columnIndex));
+                        }
+                    }
+                    // Reset for the next possible match
+                    continuousCount = 0;
+                    firstItem = null;
+                }
+            }
+
+            // Just to ensure we handle the case where the last elements are in a match
+            if (continuousCount >= 4)
+            {
+                foundMatch = true;
+                if (continuousCount == 4)
+                {
+                    ColumnBoomList.Add(new Vector2(startRowIndex + 1, columnIndex));
+                }
+                else // 5及以上
+                {
+                    SuperBoomList.Add(new Vector2(startRowIndex + continuousCount / 2, columnIndex));
+                }
+            }
+        }
+
+        return foundMatch;
+    }
+
+    
+
 
 
 
@@ -193,9 +264,11 @@ public class BundleSpawner : MonoBehaviour
     IEnumerator CheckMatch() // Check for matches in the grid
     {
         CheckRow4_5Match(); 
+        CheckColumn4_5Match();
        bool foundMatch = CheckXMatch() | CheckYMatch();
        if(foundMatch){
            RemoveMatchBundles();
+           FillBoomsIfNeeded();
            yield return new WaitForSeconds(0.2f);
            DropDownOtherBundles();
            m_matchBundles = new ArrayList(); // Clear the match bundles list
@@ -203,45 +276,57 @@ public class BundleSpawner : MonoBehaviour
            StartCoroutine(AutoMatchAgain());
        }
        m_matchBundles.Clear(); // Clear list after checking
-       FillBoomsIfNeeded();
    }
 
 
 
 
     //<————————生成炸弹——————————>
-        private void FillBoomsIfNeeded()
+private void FillBoomsIfNeeded()
+{
+    Debug.Log("Filling booms...");
+
+    // Handle RowBoom
+    if (RowBoomList == null)
     {
-        Debug.Log("Filling booms...");
-
-        // Handle RowBoom
-        if (RowBoomList == null)
-        {
-            Debug.LogError("RowBoomList is null.");
-            return;
-        }
-        foreach (Vector2 pos in RowBoomList)
-        {
-            Debug.Log($"Placing row boom at: {pos}");
-            PlaceBoomAt((int)pos.x, (int)pos.y, 1);
-        }
-
-        // Handle SuperBoom
-        if (SuperBoomList == null)
-        {
-            Debug.LogError("SuperBoomList is null.");
-            return;
-        }
-        foreach (Vector2 pos in SuperBoomList)
-        {
-            Debug.Log($"Placing super boom at: {pos}");
-            PlaceBoomAt((int)pos.x, (int)pos.y, 2);
-        }
-
-        // Clear lists after processing
-        RowBoomList.Clear();
-        SuperBoomList.Clear();
+        Debug.LogError("RowBoomList is null.");
+        return;
     }
+    foreach (Vector2 pos in RowBoomList)
+    {
+        Debug.Log($"Placing row boom at: {pos}");
+        PlaceBoomAt((int)pos.x, (int)pos.y, 1);
+    }
+
+    // Handle SuperBoom
+    if (SuperBoomList == null)
+    {
+        Debug.LogError("SuperBoomList is null.");
+        return;
+    }
+    foreach (Vector2 pos in SuperBoomList)
+    {
+        Debug.Log($"Placing super boom at: {pos}");
+        PlaceBoomAt((int)pos.x, (int)pos.y, 2);
+    }
+
+    // Handle ColumnBoom
+    if (ColumnBoomList == null)
+    {
+        Debug.LogError("ColumnBoomList is null.");
+        return;
+    }
+    foreach (Vector2 pos in ColumnBoomList)
+    {
+        Debug.Log($"Placing column boom at: {pos}");
+        PlaceBoomAt((int)pos.x, (int)pos.y, 3); // Assuming 3 is the type for column bombs
+    }
+
+    // Clear lists after processing
+    RowBoomList.Clear();
+    SuperBoomList.Clear();
+    ColumnBoomList.Clear();
+}
 
     private void PlaceBoomAt(int rowIndex, int columnIndex, int boomType)
     {
