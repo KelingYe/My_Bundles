@@ -17,6 +17,10 @@ public class BundleItem : MonoBehaviour
     }
 
     public void CreateBundleBg(int color,GameObject prefab){
+        if (transform.childCount > 0)
+        {
+            Destroy(transform.GetChild(0).gameObject);
+        }
         this.bundleColor = color;
         this.isBoom = false;
         bundleSpriteObj = Instantiate(prefab); // Instantiate the prefab for the item in the grid

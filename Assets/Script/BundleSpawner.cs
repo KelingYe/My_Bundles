@@ -16,7 +16,6 @@ public class BundleSpawner : MonoBehaviour
     public ArrayList SuperBoomList; // List of bundle items to be removed
     private Transform m_bundleRoot; // Root transform for the bundle items
     private ArrayList m_matchBundles; // List of matched bundle items
-    public int boomCount = 0;
     private void Awake()
     {
         m_bundleRoot = transform;
@@ -320,10 +319,10 @@ public class BundleSpawner : MonoBehaviour
         for (int i = 0; i < m_matchBundles.Count; i++)
         {
             var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
-            Debug.Log($"Dropping down bundle at: {item.rowIndex}, {item.columnIndex}");
+            // Debug.Log($"Dropping down bundle at: {item.rowIndex}, {item.columnIndex}");
             if(item.isBoom) // Check if the item is a bomb
             {
-                Debug.Log("Item is a bomb, skipping...");
+                // Debug.Log("Item is a bomb, skipping...");
                 continue; // Skip the item if it is a bomb
             }
             for (int j = item.rowIndex + 1; j < GlobalDef.RowCount; j++)
@@ -363,7 +362,6 @@ public class BundleSpawner : MonoBehaviour
     {
         CheckRow4_5Match(); 
         CheckColumn4_5Match();
-        boomCount = RowBoomList.Count + ColumnBoomList.Count + SuperBoomList.Count; // Count the number of matches found
         bool foundMatch = CheckXMatch() | CheckYMatch();
         if (foundMatch)
         {
@@ -396,23 +394,42 @@ public class BundleSpawner : MonoBehaviour
         }
     }
 
-    public void OnButtonClick()
+
+    private float lastClickTime = 0f; // Track the last time the button was clicked
+    private float debounceInterval = 0.5f; // Debounce interval in seconds
+
+    // Existing methods...
+public void OnButtonClick()
+{
+    float currentTime = Time.time;
+    if (currentTime - lastClickTime < debounceInterval)
     {
-        Debug.Log("按钮已点击！");
-        // 这里添加点击按钮时要执行的代码
-        for (int  i = GlobalDef.RowCount - 1; i >= 0; i--){
-            var temp = BundleList[i] as ArrayList; // Get the list of bundle items for the current row
-            for (int j = 0; j < GlobalDef.ColumnCount; j++){
-                var item = temp[j] as BundleItem; // Get the bundle item at the current position
-                item.isBoom = false;
-                item.bundleColor = Random.Range(0, bundlePrefabs.Length); // Randomly select a color for the bundle item
-                SetBundleItem(i, j, item); // Set the bundle item at the current position
-            }
+        // Debug.Log("Button click ignored due to debounce.");
+        return; // Ignore the click if it's too soon after the last click
+    }
+
+    lastClickTime = currentTime; // Update the last click time
+    // Debug.Log("按钮已点击！");
+    PrintBundleList();
+    // Here add the code to execute when the button is clicked
+    for (int rowIndex = 0; rowIndex < GlobalDef.RowCount; rowIndex++)
+    {
+        var temp = BundleList[rowIndex] as ArrayList; // Get the list of bundle items for the current row
+        for (int j = 0; j < GlobalDef.ColumnCount; j++)
+        {
+            var item = temp[j] as BundleItem; // Get the bundle item at the current position
+            item.isBoom = false;
+            item.bundleColor = Random.Range(0, bundlePrefabs.Length); // Randomly select a color for the bundle item
+            item.CreateBundleBg(item.bundleColor, bundlePrefabs[item.bundleColor]); // Update the background of the item
+            // Debug.Log($"点击后更换的 Row: {item.rowIndex}, Column: {item.columnIndex}, Color: {item.bundleColor}");
         }
     }
+}
+
 
     private void Start()
     {
+        BeginButton.onClick.AddListener(OnButtonClick); // 给按钮添加点击事件的监听器
         BundleList = new ArrayList(); // Initialize the bundle list
         for (int rowIndex = 0; rowIndex < GlobalDef.RowCount; rowIndex++)
         {
@@ -424,11 +441,11 @@ public class BundleSpawner : MonoBehaviour
             }
             BundleList.Add(temp);   // Add the temporary list to the bundle list
         }
+        PrintBundleList(); // Print the initial state of the bundle list
     }
 
     private void Update()
     {
-        BeginButton.onClick.AddListener(OnButtonClick); // 给按钮添加点击事件的监听器
         if (Input.GetMouseButtonDown(0)) // Check for mouse click
         {
             Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition); // Get the mouse position in world coordinates
