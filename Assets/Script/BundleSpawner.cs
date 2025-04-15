@@ -2,9 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI; // 引入UI命名空间来处理UI元素
 
 public class BundleSpawner : MonoBehaviour
 {
+    public Button BeginButton; 
     public GameObject[] boomPrefabs; // Prefab for the bundle item
     public GameObject[] bundlePrefabs; // Prefab for the bundle item
     public ArrayList BundleList;    // List of bundle items
@@ -22,6 +24,7 @@ public class BundleSpawner : MonoBehaviour
         SuperBoomList = new ArrayList(); // Initialize SuperBoomList
         ColumnBoomList = new ArrayList();
     }
+
 
     private void SetBundleItem(int rowIndex, int columnIndex, BundleItem item)
     {
@@ -42,6 +45,7 @@ public class BundleSpawner : MonoBehaviour
         return bhv; // Return the BundleItem component
     }
 
+    //<————————添加炸弹Bundle——————————>
     private BundleItem AddBoomBundle(int rowIndex, int columnIndex, int boomType)
     {
         var item = new GameObject("item");
@@ -52,6 +56,8 @@ public class BundleSpawner : MonoBehaviour
         bhv.CreateBoomBG(boomType, boomPrefabs[boomType]); // Create the background for the item
         return bhv; // Return the BundleItem component
     }
+
+    //<————————添加匹配Bundle——————————>
     private void AddMatchBundle(BundleItem item)
     {
         if (m_matchBundles == null) { 
@@ -62,6 +68,8 @@ public class BundleSpawner : MonoBehaviour
        } // Add the item to the match bundles list if it is not already present
     }
 
+
+    //<————————获取BundleItem——————————>
     private BundleItem GetBundleItem(int rowIndex, int columnIndex)
     {
         if (rowIndex < 0 || rowIndex >= GlobalDef.RowCount) return null; // Check if the row index is out of bounds
@@ -240,24 +248,6 @@ public class BundleSpawner : MonoBehaviour
        }
     }
 
-    IEnumerator CheckMatch() // Check for matches in the grid
-    {
-        boomCount = RowBoomList.Count + ColumnBoomList.Count + SuperBoomList.Count; // Count the number of matches found
-        bool foundMatch = CheckXMatch() | CheckYMatch();
-        CheckRow4_5Match(); 
-        CheckColumn4_5Match();
-        if (foundMatch)
-        {
-            RemoveMatchBundles();
-            FillBoomsIfNeeded();
-            yield return new WaitForSeconds(0.2f);
-            DropDownOtherBundles();
-            m_matchBundles = new ArrayList(); // Clear the match bundles list
-            yield return new WaitForSeconds(0.6f);
-            StartCoroutine(AutoMatchAgain());
-        }
-        m_matchBundles.Clear(); // Clear list after checking
-    }
 
     //<————————生成炸弹——————————>
     private void FillBoomsIfNeeded()
@@ -310,35 +300,7 @@ public class BundleSpawner : MonoBehaviour
     }
 
 
-// <————————下落剩余Bundle——————————>
-    private void DropDownOtherBundles() // Drop down the other bundles in the grid
-    {
-        Debug.Log("Dropping down other bundles...");
-        for (int i = 0; i < m_matchBundles.Count; i++)
-        {
-            var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
-            Debug.Log($"Dropping down bundle at: {item.rowIndex}, {item.columnIndex}");
-            // if(item.isBoom) // Check if the item is a bomb
-            // {
-            //     Debug.Log("Item is a bomb, skipping...");
-            //     continue; // Skip the item if it is a bomb
-            // }
-            for (int j = item.rowIndex + 1; j < GlobalDef.RowCount; j++)
-            {
-                var temp = GetBundleItem(j, item.columnIndex); // Get the bundle item below
-                Debug.Log($"Moving bundle down from {temp.rowIndex}, {temp.columnIndex} to {temp.rowIndex - 1}, {temp.columnIndex}");
-                temp.rowIndex--; // Decrease the row index of the item below
-                SetBundleItem(temp.rowIndex, temp.columnIndex, temp); // Set the bundle item to the new position
-                temp.UpdatePosition(temp.rowIndex, temp.columnIndex, true);
-            }
-            ReuseRemovedBundles(item); // Reuse the removed bundle item
-            Debug.Log("______________________________");
-        }
-        
-        m_matchBundles.Clear(); // Clear the match bundles list 
-    }
-
-
+    //<————————重用被移除的Bundle——————————>
     private void ReuseRemovedBundles(BundleItem bundle) // Reuse the removed bundles
     {
         var color = Random.Range(0, bundlePrefabs.Length); // Randomly select a color for the bundle item
@@ -350,7 +312,78 @@ public class BundleSpawner : MonoBehaviour
         bundle.UpdatePosition(bundle.rowIndex, bundle.columnIndex,true); // Update the position of the bundle item in the grid
     }
 
+
+    // <————————下落剩余Bundle——————————>
+    private void DropDownOtherBundles() // Drop down the other bundles in the grid
+    {
+        Debug.Log("Dropping down other bundles...");
+        for (int i = 0; i < m_matchBundles.Count; i++)
+        {
+            var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
+            Debug.Log($"Dropping down bundle at: {item.rowIndex}, {item.columnIndex}");
+            if(item.isBoom) // Check if the item is a bomb
+            {
+                Debug.Log("Item is a bomb, skipping...");
+                continue; // Skip the item if it is a bomb
+            }
+            for (int j = item.rowIndex + 1; j < GlobalDef.RowCount; j++)
+            {
+                var temp = GetBundleItem(j, item.columnIndex); // Get the bundle item below
+                // Debug.Log($"Moving bundle down from {temp.rowIndex}, {temp.columnIndex} to {temp.rowIndex - 1}, {temp.columnIndex}");
+                temp.rowIndex--; // Decrease the row index of the item below
+                SetBundleItem(temp.rowIndex, temp.columnIndex, temp); // Set the bundle item to the new position
+                temp.UpdatePosition(temp.rowIndex, temp.columnIndex, true);
+            }
+            ReuseRemovedBundles(item); // Reuse the removed bundle item
+        }
+        m_matchBundles.Clear(); // Clear the match bundles list 
+    }
+
+    //按照行列输出当前bundleList（坐标，颜色）
+    public void PrintBundleList(){
+        Debug.Log("Current Bundle List: ");
+        for (int  i = GlobalDef.RowCount - 1; i >= 0; i--){
+            var temp = BundleList[i] as ArrayList; // Get the list of bundle items for the current row
+            for (int j = 0; j < GlobalDef.ColumnCount; j++){
+                var item = temp[j] as BundleItem; // Get the bundle item at the current position
+                if (item.isBoom){
+                    Debug.Log($"Row: {item.rowIndex}, Column: {item.columnIndex}, Type: {item.boomType}");
+                }else{
+                    Debug.Log($"Row: {item.rowIndex}, Column: {item.columnIndex}, Color: {item.bundleColor}");
+                }
+            }
+        }
+        
+        Debug.Log("-------------------------------"); 
+    }
+
+
+    //<————————检查匹配，移除匹配的Bundle, 填充炸弹， 掉落其他Bundle——————————>
+    IEnumerator CheckMatch() // Check for matches in the grid
+    {
+        CheckRow4_5Match(); 
+        CheckColumn4_5Match();
+        boomCount = RowBoomList.Count + ColumnBoomList.Count + SuperBoomList.Count; // Count the number of matches found
+        bool foundMatch = CheckXMatch() | CheckYMatch();
+        if (foundMatch)
+        {
+            RemoveMatchBundles();
+            FillBoomsIfNeeded();
+            yield return new WaitForSeconds(0.2f);
+            DropDownOtherBundles();
+            m_matchBundles = new ArrayList(); // Clear the match bundles list
+            yield return new WaitForSeconds(0.4f);
+            PrintBundleList(); // Print the current state of the bundle list
+            StartCoroutine(AutoMatchAgain());
+        }
+        m_matchBundles.Clear(); // Clear list after checking
+    }
+
+    //
+
     IEnumerator AutoMatchAgain(){
+        CheckRow4_5Match(); 
+        CheckColumn4_5Match();
         if(CheckXMatch() | CheckYMatch()){
             RemoveMatchBundles();
             FillBoomsIfNeeded();
@@ -358,7 +391,23 @@ public class BundleSpawner : MonoBehaviour
             DropDownOtherBundles();
             m_matchBundles = new ArrayList(); // Clear the match bundles list
             yield return new WaitForSeconds(0.5f);
+            PrintBundleList();
             StartCoroutine(AutoMatchAgain()); // Start the coroutine again to check for matches
+        }
+    }
+
+    public void OnButtonClick()
+    {
+        Debug.Log("按钮已点击！");
+        // 这里添加点击按钮时要执行的代码
+        for (int  i = GlobalDef.RowCount - 1; i >= 0; i--){
+            var temp = BundleList[i] as ArrayList; // Get the list of bundle items for the current row
+            for (int j = 0; j < GlobalDef.ColumnCount; j++){
+                var item = temp[j] as BundleItem; // Get the bundle item at the current position
+                item.isBoom = false;
+                item.bundleColor = Random.Range(0, bundlePrefabs.Length); // Randomly select a color for the bundle item
+                SetBundleItem(i, j, item); // Set the bundle item at the current position
+            }
         }
     }
 
@@ -379,6 +428,7 @@ public class BundleSpawner : MonoBehaviour
 
     private void Update()
     {
+        BeginButton.onClick.AddListener(OnButtonClick); // 给按钮添加点击事件的监听器
         if (Input.GetMouseButtonDown(0)) // Check for mouse click
         {
             Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition); // Get the mouse position in world coordinates
