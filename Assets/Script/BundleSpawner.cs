@@ -306,26 +306,8 @@ public class BundleSpawner : MonoBehaviour
         ColumnBoomList.Clear();
     
         // Drop down other bundles to fill the gaps
-        DropDownOtherBundles();
+        // DropDownOtherBundles();
     }
-
-
-
-    // private BundleItem AddBoomBundle(int rowIndex, int columnIndex, int boomType)
-    // {
-    //     GameObject boomprefab = boomPrefabs[boomType];
-    //     Debug.Log($"Creating BoomBundle of type {boomType} at ({rowIndex}, {columnIndex})");
-    //     var item = new GameObject("Boom");
-    //     item.transform.SetParent(m_bundleRoot, false);
-    //     item.AddComponent<BoxCollider2D>().size = Vector2.one * GlobalDef.CellSize;
-    //     var bhv = item.AddComponent<BundleItem>();
-    //     bhv.UpdatePosition(rowIndex, columnIndex);
-    //     bhv.CreateBoomBG(boomType, boomprefab);
-    //     return bhv;
-    // }
-
-
-
 
 
 // <————————下落剩余Bundle——————————>
@@ -336,11 +318,11 @@ public class BundleSpawner : MonoBehaviour
         {
             var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
             Debug.Log($"Dropping down bundle at: {item.rowIndex}, {item.columnIndex}");
-            if(item.isBoom) // Check if the item is a bomb
-            {
-                Debug.Log("Item is a bomb, skipping...");
-                continue; // Skip the item if it is a bomb
-            }
+            // if(item.isBoom) // Check if the item is a bomb
+            // {
+            //     Debug.Log("Item is a bomb, skipping...");
+            //     continue; // Skip the item if it is a bomb
+            // }
             for (int j = item.rowIndex + 1; j < GlobalDef.RowCount; j++)
             {
                 var temp = GetBundleItem(j, item.columnIndex); // Get the bundle item below
@@ -356,42 +338,6 @@ public class BundleSpawner : MonoBehaviour
         m_matchBundles.Clear(); // Clear the match bundles list 
     }
 
-
-
-
-    // private bool IsBombAt(int rowIndex, int columnIndex)
-    // {
-    //     // Check if there is a bomb at the given position
-    //     foreach (Vector2 pos in RowBoomList)
-    //     {
-    //         if (pos.x == rowIndex && pos.y == columnIndex)
-    //         {
-    //             return true;
-    //         }
-    //     }
-    //     foreach (Vector2 pos in ColumnBoomList)
-    //     {
-    //         if (pos.x == rowIndex && pos.y == columnIndex)
-    //         {
-    //             return true;
-    //         }
-    //     }
-    //     foreach (Vector2 pos in SuperBoomList)
-    //     {
-    //         if (pos.x == rowIndex && pos.y == columnIndex)
-    //         {
-    //             return true;
-    //         }
-    //     }
-    //     // foreach (Vector2 pos in BigBoomList)
-    //     // {
-    //     //     if (pos.x == rowIndex && pos.y == columnIndex)
-    //     //     {
-    //     //         return true;
-    //     //     }
-    //     // }
-    //     return false;
-    // }
 
     private void ReuseRemovedBundles(BundleItem bundle) // Reuse the removed bundles
     {
@@ -411,7 +357,7 @@ public class BundleSpawner : MonoBehaviour
             yield return new WaitForSeconds(0.2f);
             DropDownOtherBundles();
             m_matchBundles = new ArrayList(); // Clear the match bundles list
-            yield return new WaitForSeconds(0.6f);
+            yield return new WaitForSeconds(0.5f);
             StartCoroutine(AutoMatchAgain()); // Start the coroutine again to check for matches
         }
     }
