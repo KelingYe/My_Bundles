@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class BundleSpawner : MonoBehaviour
@@ -41,6 +42,16 @@ public class BundleSpawner : MonoBehaviour
         return bhv; // Return the BundleItem component
     }
 
+    private BundleItem AddBoomBundle(int rowIndex, int columnIndex, int boomType)
+    {
+        var item = new GameObject("item");
+        item.transform.SetParent(m_bundleRoot, false);
+        item.AddComponent<BoxCollider2D>().size = Vector2.one * GlobalDef.CellSize;
+        var bhv = item.AddComponent<BundleItem>();
+        bhv.UpdatePosition(rowIndex, columnIndex);
+        bhv.CreateBoomBG(boomType, boomPrefabs[boomType]); // Create the background for the item
+        return bhv; // Return the BundleItem component
+    }
     private void AddMatchBundle(BundleItem item)
     {
         if (m_matchBundles == null) { 
@@ -94,13 +105,15 @@ public class BundleSpawner : MonoBehaviour
                         // 确定匹配类型并存储相关位置
                         if (continuousCount == 4)
                         {
+                            var item = AddBoomBundle(rowIndex, startColumnIndex + 1, 0); // Create a new bundle item for the match
                             Debug.Log("RowBoomList: " + rowIndex + " " + (startColumnIndex + 1));
-                            RowBoomList.Add(new Vector2(rowIndex, startColumnIndex + 1));
+                            RowBoomList.Add(item);
                         }
                         else // 5及以上
                         {
+                            var item = AddBoomBundle(rowIndex, startColumnIndex + continuousCount / 2, 2); // Create a new bundle item for the match
                             Debug.Log("SuperBoomList: " + rowIndex + " " + (startColumnIndex + continuousCount / 2));   
-                            SuperBoomList.Add(new Vector2(rowIndex, startColumnIndex + continuousCount / 2));
+                            SuperBoomList.Add(item);
                         }
                     }
                     // Reset for the next possible match
@@ -149,13 +162,15 @@ public class BundleSpawner : MonoBehaviour
                         // Determine match type and store relevant positions
                         if (continuousCount == 4)
                         {
+                            var item = AddBoomBundle(startRowIndex+1, columnIndex, 1);
                             Debug.Log("ColumnBoomList: " + (startRowIndex + 1) + " " + columnIndex);
-                            ColumnBoomList.Add(new Vector2(startRowIndex + 1, columnIndex));
+                            ColumnBoomList.Add(item);
                         }
                         else // 5及以上
                         {
+                            var item = AddBoomBundle(startRowIndex + continuousCount / 2, columnIndex, 3);                                 
                             Debug.Log("SuperBoomList: " + (startRowIndex + continuousCount / 2) + " " + columnIndex);
-                            SuperBoomList.Add(new Vector2(startRowIndex + continuousCount / 2, columnIndex));
+                            SuperBoomList.Add(item);
                         }
                     }
                     // Reset for the next possible match
@@ -227,10 +242,10 @@ public class BundleSpawner : MonoBehaviour
 
     IEnumerator CheckMatch() // Check for matches in the grid
     {
-        CheckRow4_5Match(); 
-        CheckColumn4_5Match();
         boomCount = RowBoomList.Count + ColumnBoomList.Count + SuperBoomList.Count; // Count the number of matches found
         bool foundMatch = CheckXMatch() | CheckYMatch();
+        CheckRow4_5Match(); 
+        CheckColumn4_5Match();
         if (foundMatch)
         {
             RemoveMatchBundles();
@@ -255,10 +270,10 @@ public class BundleSpawner : MonoBehaviour
             Debug.Log("RowBoomList is null.");
             return;
         }
-        foreach (Vector2 pos in RowBoomList)
+        foreach (BundleItem item in RowBoomList)
         {
-            Debug.Log($"Placing row boom at: {pos}");
-            PlaceBoomAt((int)pos.x, (int)pos.y, 1);
+            Debug.Log("Placing row boom at: " + item.rowIndex + ", " + item.columnIndex);
+            SetBundleItem(item.rowIndex, item.columnIndex, item); // Set the bundle item at the current position
         }
 
         // Handle SuperBoom
@@ -266,71 +281,48 @@ public class BundleSpawner : MonoBehaviour
         {
             Debug.Log("SuperBoomList is null.");
         return;
-    }
-    foreach (Vector2 pos in SuperBoomList)
-    {
-        Debug.Log($"Placing super boom at: {pos}");
-        PlaceBoomAt((int)pos.x, (int)pos.y, 2);
-    }
-
-    // Handle ColumnBoom
-    if (ColumnBoomList == null)
-    {
-        Debug.Log("ColumnBoomList is null.");
-        return;
-    }
-    foreach (Vector2 pos in ColumnBoomList)
-    {
-        Debug.Log($"Placing column boom at: {pos}");
-        PlaceBoomAt((int)pos.x, (int)pos.y, 3); // Assuming 3 is the type for column bombs
-    }
-
-    // Clear lists after processing
-    RowBoomList.Clear();
-    SuperBoomList.Clear();
-    ColumnBoomList.Clear();
-
-    // Drop down other bundles to fill the gaps
-    DropDownOtherBundles();
-}
-
-    private void PlaceBoomAt(int rowIndex, int columnIndex, int boomType)
-    {
-        if (rowIndex < 0 || rowIndex >= GlobalDef.RowCount || columnIndex < 0 || columnIndex >= GlobalDef.ColumnCount)
+        }
+        foreach (BundleItem item in SuperBoomList)
         {
-            Debug.LogWarning($"Position ({rowIndex}, {columnIndex}) is out of bounds.");
+            Debug.Log($"Placing super boom at: {item.rowIndex}, {item.columnIndex}");
+            SetBundleItem(item.rowIndex, item.columnIndex, item);
+        }
+    
+        // Handle ColumnBoom
+        if (ColumnBoomList == null)
+        {
+            Debug.Log("ColumnBoomList is null.");
             return;
         }
-
-        BundleItem item = GetBundleItem(rowIndex, columnIndex);
-        if (item != null)
+        foreach (BundleItem item in ColumnBoomList)
         {
-            Destroy(item.gameObject); // Remove the existing BundleItem
+            Debug.Log("Placing column boom at: " + item.rowIndex + ", " + item.columnIndex);
+            SetBundleItem(item.rowIndex, item.columnIndex, item); // Set the bundle item at the current position    
         }
-
-        item = AddBoomBundle(rowIndex, columnIndex, boomType);
-        if (item != null)
-        {
-            SetBundleItem(rowIndex, columnIndex, item);
-        }
-        else
-        {
-            Debug.Log("Failed to create BoomBundle.");
-        }
+    
+        // Clear lists after processing
+        RowBoomList.Clear();
+        SuperBoomList.Clear();
+        ColumnBoomList.Clear();
+    
+        // Drop down other bundles to fill the gaps
+        DropDownOtherBundles();
     }
 
-    private BundleItem AddBoomBundle(int rowIndex, int columnIndex, int boomType)
-    {
-        GameObject boomprefab = boomPrefabs[boomType];
-        Debug.Log($"Creating BoomBundle of type {boomType} at ({rowIndex}, {columnIndex})");
-        var item = new GameObject("Boom");
-        item.transform.SetParent(m_bundleRoot, false);
-        item.AddComponent<BoxCollider2D>().size = Vector2.one * GlobalDef.CellSize;
-        var bhv = item.AddComponent<BundleItem>();
-        bhv.UpdatePosition(rowIndex, columnIndex);
-        bhv.CreateBoomBG(boomType, boomprefab);
-        return bhv;
-    }
+
+
+    // private BundleItem AddBoomBundle(int rowIndex, int columnIndex, int boomType)
+    // {
+    //     GameObject boomprefab = boomPrefabs[boomType];
+    //     Debug.Log($"Creating BoomBundle of type {boomType} at ({rowIndex}, {columnIndex})");
+    //     var item = new GameObject("Boom");
+    //     item.transform.SetParent(m_bundleRoot, false);
+    //     item.AddComponent<BoxCollider2D>().size = Vector2.one * GlobalDef.CellSize;
+    //     var bhv = item.AddComponent<BundleItem>();
+    //     bhv.UpdatePosition(rowIndex, columnIndex);
+    //     bhv.CreateBoomBG(boomType, boomprefab);
+    //     return bhv;
+    // }
 
 
 
@@ -339,10 +331,12 @@ public class BundleSpawner : MonoBehaviour
 // <————————下落剩余Bundle——————————>
     private void DropDownOtherBundles() // Drop down the other bundles in the grid
     {
+        Debug.Log("Dropping down other bundles...");
         for (int i = 0; i < m_matchBundles.Count; i++)
         {
             var item = m_matchBundles[i] as BundleItem; // Get the bundle item from the match bundles list
-            if(IsBombAt(item.rowIndex, item.columnIndex)) // Check if the item is a bomb
+            Debug.Log($"Dropping down bundle at: {item.rowIndex}, {item.columnIndex}");
+            if(item.isBoom) // Check if the item is a bomb
             {
                 Debug.Log("Item is a bomb, skipping...");
                 continue; // Skip the item if it is a bomb
@@ -350,51 +344,54 @@ public class BundleSpawner : MonoBehaviour
             for (int j = item.rowIndex + 1; j < GlobalDef.RowCount; j++)
             {
                 var temp = GetBundleItem(j, item.columnIndex); // Get the bundle item below
+                Debug.Log($"Moving bundle down from {temp.rowIndex}, {temp.columnIndex} to {temp.rowIndex - 1}, {temp.columnIndex}");
                 temp.rowIndex--; // Decrease the row index of the item below
                 SetBundleItem(temp.rowIndex, temp.columnIndex, temp); // Set the bundle item to the new position
                 temp.UpdatePosition(temp.rowIndex, temp.columnIndex, true);
             }
             ReuseRemovedBundles(item); // Reuse the removed bundle item
+            Debug.Log("______________________________");
         }
+        
         m_matchBundles.Clear(); // Clear the match bundles list 
     }
 
 
 
 
-    private bool IsBombAt(int rowIndex, int columnIndex)
-    {
-        // Check if there is a bomb at the given position
-        foreach (Vector2 pos in RowBoomList)
-        {
-            if (pos.x == rowIndex && pos.y == columnIndex)
-            {
-                return true;
-            }
-        }
-        foreach (Vector2 pos in ColumnBoomList)
-        {
-            if (pos.x == rowIndex && pos.y == columnIndex)
-            {
-                return true;
-            }
-        }
-        foreach (Vector2 pos in SuperBoomList)
-        {
-            if (pos.x == rowIndex && pos.y == columnIndex)
-            {
-                return true;
-            }
-        }
-        // foreach (Vector2 pos in BigBoomList)
-        // {
-        //     if (pos.x == rowIndex && pos.y == columnIndex)
-        //     {
-        //         return true;
-        //     }
-        // }
-        return false;
-    }
+    // private bool IsBombAt(int rowIndex, int columnIndex)
+    // {
+    //     // Check if there is a bomb at the given position
+    //     foreach (Vector2 pos in RowBoomList)
+    //     {
+    //         if (pos.x == rowIndex && pos.y == columnIndex)
+    //         {
+    //             return true;
+    //         }
+    //     }
+    //     foreach (Vector2 pos in ColumnBoomList)
+    //     {
+    //         if (pos.x == rowIndex && pos.y == columnIndex)
+    //         {
+    //             return true;
+    //         }
+    //     }
+    //     foreach (Vector2 pos in SuperBoomList)
+    //     {
+    //         if (pos.x == rowIndex && pos.y == columnIndex)
+    //         {
+    //             return true;
+    //         }
+    //     }
+    //     // foreach (Vector2 pos in BigBoomList)
+    //     // {
+    //     //     if (pos.x == rowIndex && pos.y == columnIndex)
+    //     //     {
+    //     //         return true;
+    //     //     }
+    //     // }
+    //     return false;
+    // }
 
     private void ReuseRemovedBundles(BundleItem bundle) // Reuse the removed bundles
     {
